@@ -26,13 +26,17 @@ CONFIG += c++11
 
 SOURCES += \
         main.cpp \
-        mainwindow.cpp
+        mainwindow.cpp \
+        shapesetwin.cpp
 
 HEADERS += \
-        mainwindow.h
+        generalstruct.h \
+        mainwindow.h \
+        shapesetwin.h
 
 FORMS += \
-        mainwindow.ui
+        mainwindow.ui \
+        shapesetwin.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

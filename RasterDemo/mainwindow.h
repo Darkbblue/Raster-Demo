@@ -2,6 +2,12 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QPainter>
+
+#include <QDebug>
+
+#include "generalstruct.h"
+#include "shapesetwin.h"
 
 namespace Ui {
 class MainWindow;
@@ -15,8 +21,31 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void paintEvent(QPaintEvent *);
+
+protected:
+    // 管理功能
+    void Clear(); // 清空图形数据
+    void ClearBoardOnly(); // 仅清空绘制信息，不清除原始图形
+    void SetButtonAccess(); // 设置按钮的活跃状态
+
+protected slots:
+    void SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设置图形
+                  int p3x, int p3y, int p4x, int p4y);
+
+private slots:
+    void on_pbSetShape_clicked();
+
 private:
     Ui::MainWindow *ui;
+
+    // 子窗口
+    ShapeSetWin ssw;
+
+    // 记录所有需要绘制的元素
+    Shape shape; // 原始图形
+    int board[X_LIMIT][Y_LIMIT]; // 大像素的颜色记录
+    int mark[X_LIMIT][Y_LIMIT]; // 特殊标记，例如中点标记，绘制在上述位置下方一半像素宽度处
 };
 
 #endif // MAINWINDOW_H
