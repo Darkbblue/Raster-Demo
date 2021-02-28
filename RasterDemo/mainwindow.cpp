@@ -3,7 +3,8 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    ssw(nullptr)
 {
     // 窗体设置
     ui->setupUi(this);
@@ -12,10 +13,8 @@ MainWindow::MainWindow(QWidget *parent) :
     // 内容初始化
     Clear();
 
-    // 测试
-/*    shape.SetCircle(Point(10, 7), 7);
-    board[1][1] = 1;
-    mark[2][2] = 1;*/
+    // 连接信号/槽
+    connect(&ssw, &ShapeSetWin::SetShape, this, &MainWindow::SetShape);
 
     // 其他
     update();
@@ -114,4 +113,62 @@ void MainWindow::Clear() // 清空图形数据
     for (int x = 0; x < X_LIMIT; x++)
         for (int y = 0; y < Y_LIMIT; y++)
             board[x][y] = mark[x][y] = 0;
+    SetButtonAccess();
+}
+
+void MainWindow::ClearBoardOnly() // 仅清空绘制信息，不清除原始图形
+{
+    for (int x = 0; x < X_LIMIT; x++)
+        for (int y = 0; y < Y_LIMIT; y++)
+            board[x][y] = mark[x][y] = 0;
+}
+
+void MainWindow::SetButtonAccess() // 设置按钮的活跃状态
+{
+    ui->pbLine1->setEnabled(false);
+    ui->pbLine2->setEnabled(false);
+    ui->pbLine3->setEnabled(false);
+    ui->pbCircle->setEnabled(false);
+    ui->pbPoly1->setEnabled(false);
+    ui->pbPoly2->setEnabled(false);
+    ui->pbPoly3->setEnabled(false);
+    ui->pbPoly4->setEnabled(false);
+
+    if (shape.active)
+    {
+        if (shape.type == 0) // 直线段
+        {
+            ui->pbLine1->setEnabled(true);
+            ui->pbLine2->setEnabled(true);
+            ui->pbLine3->setEnabled(true);
+        }
+        else if (shape.type == 1) // 圆形
+            ui->pbCircle->setEnabled(true);
+        else if (shape.type == 2) // 多边形
+        {
+            ui->pbPoly1->setEnabled(true);
+            ui->pbPoly2->setEnabled(true);
+            ui->pbPoly3->setEnabled(true);
+            ui->pbPoly4->setEnabled(true);
+        }
+    }
+}
+
+void MainWindow::SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设置图形
+                  int p3x, int p3y, int p4x, int p4y)
+{
+    if (type == 0)
+        shape.SetLine(Point(p1x, p1y), Point(p2x, p2y));
+    else if (type == 1)
+        shape.SetCircle(Point(p1x, p1y), p2x);
+    else if (type == 2)
+        shape.SetPolygon(Point(p1x, p1y), Point(p2x, p2y),
+                          Point(p3x, p3y), Point(p4x, p4y));
+    update();
+    SetButtonAccess();
+}
+
+void MainWindow::on_pbSetShape_clicked()
+{
+    ssw.show();
 }
