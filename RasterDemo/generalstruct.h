@@ -3,7 +3,7 @@
 
 #define LATTICE         50      // 像素网格的单位宽度
 #define LEFT_MARGIN     20      // 左侧边界距离
-#define UPPER_MARGIN    50      // 上方边界距离
+#define UPPER_MARGIN    75      // 上方边界距离
 #define X_LIMIT         38      // X 向像素数量
 #define Y_LIMIT         18      // Y 向像素数量
 
