@@ -29,6 +29,7 @@ SOURCES += \
         mainwindow.cpp
 
 HEADERS += \
+        generalstruct.h \
         mainwindow.h
 
 FORMS += \
