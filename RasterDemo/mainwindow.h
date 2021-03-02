@@ -29,12 +29,17 @@ protected:
     void ClearBoardOnly(); // 仅清空绘制信息，不清除原始图形
     void SetButtonAccess(); // 设置按钮的活跃状态
 
+    // 核心算法
+    void Line1(Point ps, Point pt); // 直线段 数值微分法
+
 protected slots:
     void SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设置图形
                   int p3x, int p3y, int p4x, int p4y);
 
 private slots:
     void on_pbSetShape_clicked();
+
+    void on_pbLine1_clicked();
 
 private:
     Ui::MainWindow *ui;

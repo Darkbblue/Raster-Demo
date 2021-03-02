@@ -154,6 +154,19 @@ void MainWindow::SetButtonAccess() // 设置按钮的活跃状态
     }
 }
 
+// 核心算法
+void MainWindow::Line1(Point ps, Point pt) // 直线段 数值微分法
+{
+    float k = (pt.y - ps.y) / float(pt.x - ps.x); // 斜率
+    float y = ps.y; // 增量式计算的 y 坐标
+    for (int x = ps.x; x <= pt.x; x++) // 沿着 x 轴自左向右扫描
+    {
+        board[x][int(y + 0.5)] = 1;
+        y += k;
+        update();
+    }
+}
+
 void MainWindow::SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设置图形
                   int p3x, int p3y, int p4x, int p4y)
 {
@@ -171,4 +184,10 @@ void MainWindow::SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设�
 void MainWindow::on_pbSetShape_clicked()
 {
     ssw.show();
+}
+
+void MainWindow::on_pbLine1_clicked()
+{
+    ClearBoardOnly();
+    Line1(shape.p1, shape.p2);
 }
