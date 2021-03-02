@@ -44,7 +44,7 @@ void MainWindow::paintEvent(QPaintEvent *)
         for (int y = UPPER_MARGIN; y < height() - LATTICE; y += LATTICE)
             p.drawRect(x, y, LATTICE, LATTICE);
 
-    // 设置高亮像素
+    // 绘制辅助信息
     p.setPen(Qt::gray);
     p.setBrush(Qt::gray);
     for (int x = 0; x < X_LIMIT; x++)
@@ -52,7 +52,7 @@ void MainWindow::paintEvent(QPaintEvent *)
             if (mark[x][y] == 1)
                 p.drawRect(shape.TransformX(x) - 5, LATTICE / 2 + shape.TransformY(y) - 5, 10, 10);
 
-    // 绘制辅助信息
+    // 设置高亮像素
     for (int x = 0; x < X_LIMIT; x++)
         for (int y = 0; y < Y_LIMIT; y++)
         {
@@ -62,6 +62,12 @@ void MainWindow::paintEvent(QPaintEvent *)
                 p.setBrush(Qt::black);
                 p.drawRect(shape.TransformX(x) - 10, shape.TransformY(y) - 10, 20, 20);
             }
+            else if (board[x][y] == 2) // frontier
+            {
+                p.setPen(Qt::red);
+                p.setBrush(Qt::red);
+                p.drawRect(shape.TransformX(x) - 10, shape.TransformY(y) - 10, 20, 20);
+            }
         }
 
     // 绘制原始图形
@@ -69,7 +75,6 @@ void MainWindow::paintEvent(QPaintEvent *)
     p.setBrush(Qt::transparent);
     if (shape.active) // 只有存在活跃图形时进行绘制
     {
-        qDebug() << "*";
         if (shape.type == 0) // 直线段
             p.drawLine(shape.TransformX(shape.p1.x),
                        shape.TransformY(shape.p1.y),
@@ -154,16 +159,105 @@ void MainWindow::SetButtonAccess() // 设置按钮的活跃状态
     }
 }
 
+void MainWindow::Sleep(int time) // 延迟
+{
+    QEventLoop ev;
+    QTimer::singleShot(time, &ev, SLOT(quit()));
+    ev.exec();
+}
+
+void MainWindow::SwapPoint(Point & a, Point & b) // 交换两个点
+{
+    Point tmp = a;
+    a = b;
+    b = tmp;
+}
+
+void MainWindow::AutoUpdate(Point & buffer, Point next) // 自动维护 frontier 更新逻辑
+{
+    if (buffer.x != -1) // 将上一轮的 frontier 设置为普通着色像素
+        board[buffer.x][buffer.y] =1;
+    if (next.x != -1) // 更新 frontier 并设置为特殊着色像素
+    {
+        buffer = next; // 更新 frontier
+        board[buffer.x][buffer.y] = 2; // 设置 frontier 为特殊着色像素
+    }
+    update(); // 触发重绘
+    Sleep(500); // 等待
+}
+
 // 核心算法
 void MainWindow::Line1(Point ps, Point pt) // 直线段 数值微分法
 {
-    float k = (pt.y - ps.y) / float(pt.x - ps.x); // 斜率
-    float y = ps.y; // 增量式计算的 y 坐标
-    for (int x = ps.x; x <= pt.x; x++) // 沿着 x 轴自左向右扫描
+    int dyAbs = pt.y - ps.y > 0 ? pt.y - ps.y : ps.y - pt.y;
+    int dxAbs = pt.x - ps.x > 0 ? pt.x - ps.x : ps.x - pt.x;
+    if (dyAbs <= dxAbs) // 常规的更缓的线段，以 x 为基准扫描
     {
-        board[x][int(y + 0.5)] = 1;
-        y += k;
-        update();
+        if (ps.x > pt.x)
+            SwapPoint(ps, pt);
+        float k = (pt.y - ps.y) / float(pt.x - ps.x); // 斜率，线段的平缓保证了不会为无穷大
+        float y = ps.y; // 增量式计算的 y 坐标
+        Point buffer(-1, -1);
+        for (int x = ps.x; x <= pt.x; x++) // 沿着 x 轴自左向右扫描
+        {
+            AutoUpdate(buffer, Point(x, int(y + 0.5)));
+            y += k; // 计算后续走向
+        }
+        AutoUpdate(buffer, Point(-1, -1));
+    }
+    else // 更陡峭的线段，以 y 为基准扫描
+    {
+        if (ps.y > pt.y)
+            SwapPoint(ps, pt);
+        float k = (pt.x - ps.x) / float(pt.y - ps.y); // 等效的斜率
+        float x = ps.x;
+        Point buffer(-1, -1);
+        for (int y = ps.y; y <= pt.y; y++)
+        {
+            AutoUpdate(buffer, Point(int(x + 0.5), y));
+            x += k;
+        }
+        AutoUpdate(buffer, Point(-1, -1));
+    }
+}
+
+void MainWindow::Line2(Point ps, Point pt) // 直线段 中点画线法
+{
+    int dyAbs = pt.y - ps.y > 0 ? pt.y - ps.y : ps.y - pt.y;
+    int dxAbs = pt.x - ps.x > 0 ? pt.x - ps.x : ps.x - pt.x;
+    if (dyAbs <= dxAbs) // 常规的更缓的线段，以 x 为基准扫描
+    {
+        if (ps.x > pt.x)
+            SwapPoint(ps, pt);
+        int a = ps.y - pt.y; // 直线参数
+        int b = pt.x - ps.x;
+        bool yInc = pt.y - ps.y > 0; // 直线段在 y 向上是增大的吗
+        int d = yInc ? 2 * a + b : 2 * a - b; // 判据函数
+        int inc1 = 2 * a; // 增量 1
+        int inc2 = yInc ? 2 * (a + b) : 2 * (a - b); // 增量 2
+        int x = ps.x; // 初始位置
+        int y = ps.y;
+        int dy = pt.y - ps.y > 0 ? 1 : -1;
+        Point buffer(-1, -1);
+        mark[x + 1][yInc ? y : y - 1] = 1;
+        AutoUpdate(buffer, Point(x, y));
+        while (x < pt.x)
+        {
+            if (yInc ? d < 0 : d > 0)
+            {
+                x++;
+                y += dy;
+                d += inc2;
+            }
+            else
+            {
+                x++;
+                d += inc1;
+            }
+            mark[x + 1][yInc ? y : y - 1] = 1;
+            AutoUpdate(buffer, Point(x, y));
+        }
+        AutoUpdate(buffer, Point(-1, -1));
     }
 }
 
@@ -190,4 +284,10 @@ void MainWindow::on_pbLine1_clicked()
 {
     ClearBoardOnly();
     Line1(shape.p1, shape.p2);
+}
+
+void MainWindow::on_pbLine2_clicked()
+{
+    ClearBoardOnly();
+    Line2(shape.p1, shape.p2);
 }
