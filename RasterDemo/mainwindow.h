@@ -36,6 +36,7 @@ protected:
     // 核心算法
     void Line1(Point ps, Point pt); // 直线段 数值微分法
     void Line2(Point ps, Point pt); // 直线段 中点画线法
+    void Line3(Point ps, Point pt); // 直线段 Bresenham
 
 protected slots:
     void SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设置图形
@@ -48,6 +49,8 @@ private slots:
 
     void on_pbLine2_clicked();
 
+    void on_pbLine3_clicked();
+
 private:
     Ui::MainWindow *ui;
 
@@ -58,6 +61,7 @@ private:
     Shape shape; // 原始图形
     int board[X_LIMIT][Y_LIMIT]; // 大像素的颜色记录
     int mark[X_LIMIT][Y_LIMIT]; // 特殊标记，例如中点标记，绘制在上述位置下方一半像素宽度处
+    int markY[X_LIMIT][Y_LIMIT]; // 沿 y 向绘制时使用的特殊标记，绘制在 board 位置右侧一半像素宽度处
 };
 
 #endif // MAINWINDOW_H

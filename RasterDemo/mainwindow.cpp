@@ -49,8 +49,12 @@ void MainWindow::paintEvent(QPaintEvent *)
     p.setBrush(Qt::gray);
     for (int x = 0; x < X_LIMIT; x++)
         for (int y = 0; y < Y_LIMIT; y++)
+        {
             if (mark[x][y] == 1)
                 p.drawRect(shape.TransformX(x) - 5, LATTICE / 2 + shape.TransformY(y) - 5, 10, 10);
+            if (markY[x][y] == 1)
+                p.drawRect(LATTICE / 2 + shape.TransformX(x) - 5, shape.TransformY(y) - 5, 10, 10);
+        }
 
     // 设置高亮像素
     for (int x = 0; x < X_LIMIT; x++)
@@ -117,7 +121,7 @@ void MainWindow::Clear() // 清空图形数据
     shape.Clear();
     for (int x = 0; x < X_LIMIT; x++)
         for (int y = 0; y < Y_LIMIT; y++)
-            board[x][y] = mark[x][y] = 0;
+            board[x][y] = mark[x][y] = markY[x][y] = 0;
     SetButtonAccess();
 }
 
@@ -125,7 +129,7 @@ void MainWindow::ClearBoardOnly() // 仅清空绘制信息，不清除原始图�
 {
     for (int x = 0; x < X_LIMIT; x++)
         for (int y = 0; y < Y_LIMIT; y++)
-            board[x][y] = mark[x][y] = 0;
+            board[x][y] = mark[x][y] = markY[x][y] = 0;
 }
 
 void MainWindow::SetButtonAccess() // 设置按钮的活跃状态
@@ -227,34 +231,128 @@ void MainWindow::Line2(Point ps, Point pt) // 直线段 中点画线法
     int dxAbs = pt.x - ps.x > 0 ? pt.x - ps.x : ps.x - pt.x;
     if (dyAbs <= dxAbs) // 常规的更缓的线段，以 x 为基准扫描
     {
-        if (ps.x > pt.x)
+        if (ps.x > pt.x) // 确保从左到右绘制
             SwapPoint(ps, pt);
         int a = ps.y - pt.y; // 直线参数
         int b = pt.x - ps.x;
-        bool yInc = pt.y - ps.y > 0; // 直线段在 y 向上是增大的吗
-        int d = yInc ? 2 * a + b : 2 * a - b; // 判据函数
+        int yInc = pt.y - ps.y > 0 ? 1 : -1; // 直线段在 y 向上是增大的吗
+        int d = 2 * a + yInc * b; // 判据函数
         int inc1 = 2 * a; // 增量 1
-        int inc2 = yInc ? 2 * (a + b) : 2 * (a - b); // 增量 2
+        int inc2 = 2 * (a + yInc * b); // 增量 2
         int x = ps.x; // 初始位置
         int y = ps.y;
-        int dy = pt.y - ps.y > 0 ? 1 : -1;
+
         Point buffer(-1, -1);
-        mark[x + 1][yInc ? y : y - 1] = 1;
+        mark[x + 1][yInc > 0 ? y : y - 1] = 1;
         AutoUpdate(buffer, Point(x, y));
-        while (x < pt.x)
+        while (x < pt.x) // 执行线性扫描
         {
-            if (yInc ? d < 0 : d > 0)
+            if (0x80000000 & (yInc ^ d)) // 若中点在直线下方，取斜对角
             {
                 x++;
-                y += dy;
+                y += yInc;
                 d += inc2;
             }
-            else
+            else // 若中点在直线上方，取正右侧
             {
                 x++;
                 d += inc1;
             }
-            mark[x + 1][yInc ? y : y - 1] = 1;
+            mark[x + 1][yInc > 0 ? y : y - 1] = 1;
+            AutoUpdate(buffer, Point(x, y));
+        }
+        AutoUpdate(buffer, Point(-1, -1));
+    }
+    else // 以 y 为基准扫描
+    {
+        if (ps.y > pt.y) // 确保从左到右绘制
+            SwapPoint(ps, pt);
+        int a = ps.x - pt.x; // 直线参数
+        int b = pt.y - ps.y;
+        int xInc = pt.x - ps.x > 0 ? 1 : -1; // 直线段在 x 向上是增大的吗
+        int d = 2 * a + xInc * b; // 判据函数
+        int inc1 = 2 * a; // 增量 1
+        int inc2 = 2 * (a + xInc * b); // 增量 2
+        int x = ps.x; // 初始位置
+        int y = ps.y;
+
+        Point buffer(-1, -1);
+        markY[xInc > 0 ? x : x - 1][y + 1] = 1;
+        AutoUpdate(buffer, Point(x, y));
+        while (y < pt.y) // 执行线性扫描
+        {
+            if (0x80000000 & (xInc ^ d)) // 若中点在直线下方，取斜对角
+            {
+                y++;
+                x += xInc;
+                d += inc2;
+            }
+            else // 若中点在直线上方，取正右侧
+            {
+                y++;
+                d += inc1;
+            }
+            markY[xInc > 0 ? x : x - 1][y + 1] = 1;
+            AutoUpdate(buffer, Point(x, y));
+        }
+        AutoUpdate(buffer, Point(-1, -1));
+    }
+}
+
+void MainWindow::Line3(Point ps, Point pt) // 直线段 Bresenham
+{
+    int dyAbs = pt.y - ps.y > 0 ? pt.y - ps.y : ps.y - pt.y;
+    int dxAbs = pt.x - ps.x > 0 ? pt.x - ps.x : ps.x - pt.x;
+    if (dyAbs <= dxAbs) // 常规的更缓的线段，以 x 为基准扫描
+    {
+        if (ps.x > pt.x) // 确保正向扫描
+            SwapPoint(ps, pt);
+        int yInc = pt.y - ps.y > 0 ? 1 : -1; // 直线在 y 向上是递增的吗
+        int e = yInc * (ps.x - pt.x); // 判据 误差函数
+        int inc1 = 2 * (pt.y - ps.y); // 增量 1，适用于取正右侧点
+        int inc2 = 2 * e; // 增量 2，适用于取右上方点时进行额外计算
+        int x = ps.x; // 扫描起点
+        int y = ps.y;
+        Point buffer(-1, -1);
+        mark[x + 1][yInc > 0 ? y : y - 1] = 1;
+        AutoUpdate(buffer, Point(x, y));
+        while (x < pt.x)
+        {
+            x++;
+            e += inc1;
+            if ((e ^ yInc) >= 0)
+            {
+                y += yInc;
+                e += inc2;
+            }
+            mark[x + 1][yInc > 0 ? y : y - 1] = 1;
+            AutoUpdate(buffer, Point(x, y));
+        }
+        AutoUpdate(buffer, Point(-1, -1));
+    }
+    else // 以 y 为基准扫描
+    {
+        if (ps.y > pt.y) // 确保正向扫描
+            SwapPoint(ps, pt);
+        int xInc = pt.x - ps.x > 0 ? 1 : -1; // 直线在 x 向上是递增的吗
+        int e = xInc * (ps.y - pt.y); // 判据 误差函数
+        int inc1 = 2 * (pt.x - ps.x); // 增量 1，适用于取正右侧点
+        int inc2 = 2 * e; // 增量 2，适用于取右上方点时进行额外计算
+        int x = ps.x; // 扫描起点
+        int y = ps.y;
+        Point buffer(-1, -1);
+        markY[xInc > 0 ? x : x - 1][y + 1] = 1;
+        AutoUpdate(buffer, Point(x, y));
+        while (y < pt.y)
+        {
+            y++;
+            e += inc1;
+            if ((e ^ xInc) >= 0)
+            {
+                x += xInc;
+                e += inc2;
+            }
+            markY[xInc > 0 ? x : x - 1][y + 1] = 1;
             AutoUpdate(buffer, Point(x, y));
         }
         AutoUpdate(buffer, Point(-1, -1));
@@ -264,6 +362,7 @@ void MainWindow::Line2(Point ps, Point pt) // 直线段 中点画线法
 void MainWindow::SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设置图形
                   int p3x, int p3y, int p4x, int p4y)
 {
+    Clear();
     if (type == 0)
         shape.SetLine(Point(p1x, p1y), Point(p2x, p2y));
     else if (type == 1)
@@ -290,4 +389,10 @@ void MainWindow::on_pbLine2_clicked()
 {
     ClearBoardOnly();
     Line2(shape.p1, shape.p2);
+}
+
+void MainWindow::on_pbLine3_clicked()
+{
+    ClearBoardOnly();
+    Line3(shape.p1, shape.p2);
 }
