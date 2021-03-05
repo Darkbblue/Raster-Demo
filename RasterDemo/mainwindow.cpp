@@ -359,6 +359,47 @@ void MainWindow::Line3(Point ps, Point pt) // 直线段 Bresenham
     }
 }
 
+void MainWindow::Circle(Point pc, int r) // 圆 中点画圆法
+{
+    // 在坐标原点处计算，绘制时再平移到实际位置
+    int x = 0; // 从圆的最顶部开始，向右扫描八分之一圆
+    int y = r;
+    int e = 10 - (r << 3); // 判据函数
+    auto moveToPc = [&pc](Point origin) // 将原点处的计算结果平移到实际位置
+    {
+        return Point(origin.x + pc.x, origin.y + pc.y);
+    };
+    auto drawSymetrics = [&](Point origin) // 绘制对称位置的点
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            Point target = Point(origin.x * (-1 + (i & 0x2)), origin.y * (-1 + ((i << 1) & 0x2)));
+            Point p1 = moveToPc(target);
+            Point p2 = moveToPc(Point(target.y, target.x));
+            board[p1.x][p1.y] = board[p2.x][p2.y] = 1;
+        }
+    };
+    Point buffer(-1, -1);
+    drawSymetrics(Point(x, y));
+    mark[moveToPc(Point(x, y)).x + 1][moveToPc(Point(x, y)).y - 1] = 1;
+    AutoUpdate(buffer, moveToPc(Point(x, y)));
+    while (x < y) // 仅扫描八分之一圆周
+    {
+        if (e < 0) // 取正右侧点
+            e += 24 + (x << 4);
+        else // 取对角线方向的点
+        {
+            e += 40 + ((x - y) << 4);
+            y--;
+        }
+        x++;
+        drawSymetrics(Point(x, y));
+        mark[moveToPc(Point(x, y)).x + 1][moveToPc(Point(x, y)).y - 1] = 1;
+        AutoUpdate(buffer, moveToPc(Point(x, y)));
+    }
+    AutoUpdate(buffer, Point(-1, -1));
+}
+
 void MainWindow::SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设置图形
                   int p3x, int p3y, int p4x, int p4y)
 {
@@ -395,4 +436,10 @@ void MainWindow::on_pbLine3_clicked()
 {
     ClearBoardOnly();
     Line3(shape.p1, shape.p2);
+}
+
+void MainWindow::on_pbCircle_clicked()
+{
+    ClearBoardOnly();
+    Circle(shape.p1, shape.p2.x);
 }
