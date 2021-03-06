@@ -422,6 +422,56 @@ void MainWindow::PolyFill1Sub(int x, int y, Point & buffer) // 子函数
     }
 }
 
+void MainWindow::PolyFill2() // 区域填充 扫描线算法
+{
+    std::vector<Point> stack; // 记录待完成扫描线的栈
+    stack.push_back(shape.ps); // 种子入栈
+    Point buffer(-1, -1);
+    while (!stack.empty()) // 在栈空前循环
+    {
+        Point ps = stack.back(); // 取出栈顶
+        stack.pop_back();
+        int x = ps.x;
+        int y = ps.y;
+        int xr; // 当前扫描线上到达的最右侧位置
+        int xl; // 当前扫描线上到达的最左侧位置
+        // 填充当前扫描线
+        while (board[x][y] == 0) // 向右填充
+        {
+            AutoUpdate(buffer, Point(x, y));
+            x++;
+        }
+        xr = x - 1;
+        x = ps.x - 1;
+        while (board[x][y] == 0) // 向左填充
+        {
+            AutoUpdate(buffer, Point(x, y));
+            x--;
+        }
+        xl = x + 1;
+        // 向相邻扫描线扩展
+        y++; // 移动到上方相邻行
+        for (int i = 0; i < 2; i++, y -= 2) // 先处理上方，再处理下方
+        {
+            x = xl; // 回到最左侧
+            while (x <= xr) // 在到达最右侧之前
+            {
+                bool toSpan = false; // 是否需要扩展
+                while (board[x][y] == 0) // 扫描出需要填充的区间
+                {
+                    toSpan = true;
+                    x++;
+                }
+                if (toSpan) // 如果真的进入过上面的循环
+                    stack.push_back(Point(x - 1, y)); // 得到一个新的扫描线种子，入栈
+                while (board[x][y] != 0 && x <= xr) // 快速跳过不需要填充的区间
+                    x++;
+            }
+        }
+    }
+    AutoUpdate(buffer, Point(-1, -1));
+}
+
 void MainWindow::SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设置图形
                   int p3x, int p3y, int p4x, int p4y, int p5x, int p5y)
 {
@@ -479,4 +529,14 @@ void MainWindow::on_pbPoly3_clicked()
     Line1(shape.p3, shape.p4);
     Line1(shape.p1, shape.p4);
     PolyFill1();
+}
+
+void MainWindow::on_pbPoly4_clicked()
+{
+    ClearBoardOnly();
+    Line1(shape.p1, shape.p2);
+    Line1(shape.p2, shape.p3);
+    Line1(shape.p3, shape.p4);
+    Line1(shape.p1, shape.p4);
+    PolyFill2();
 }
