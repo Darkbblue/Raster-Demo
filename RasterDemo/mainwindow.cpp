@@ -403,6 +403,25 @@ void MainWindow::Circle(Point pc, int r) // 圆 中点画圆法
     AutoUpdate(buffer, Point(-1, -1));
 }
 
+void MainWindow::PolyFill1() // 区域填充 递归算法
+{
+    Point buffer(-1, -1);
+    PolyFill1Sub(shape.ps.x, shape.ps.y, buffer);
+    AutoUpdate(buffer, Point(-1, -1));
+}
+
+void MainWindow::PolyFill1Sub(int x, int y, Point & buffer) // 子函数
+{
+    if (board[x][y] == 0) // 若尚未填色
+    {
+        AutoUpdate(buffer, Point(x, y));
+        PolyFill1Sub(x, y + 1, buffer);
+        PolyFill1Sub(x, y - 1, buffer);
+        PolyFill1Sub(x - 1, y, buffer);
+        PolyFill1Sub(x + 1, y, buffer);
+    }
+}
+
 void MainWindow::SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设置图形
                   int p3x, int p3y, int p4x, int p4y, int p5x, int p5y)
 {
@@ -450,4 +469,14 @@ void MainWindow::on_pbCircle_clicked()
 {
     ClearBoardOnly();
     Circle(shape.p1, shape.p2.x);
+}
+
+void MainWindow::on_pbPoly3_clicked()
+{
+    ClearBoardOnly();
+    Line1(shape.p1, shape.p2);
+    Line1(shape.p2, shape.p3);
+    Line1(shape.p3, shape.p4);
+    Line1(shape.p1, shape.p4);
+    PolyFill1();
 }

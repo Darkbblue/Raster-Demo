@@ -38,6 +38,8 @@ protected:
     void Line2(Point ps, Point pt); // 直线段 中点画线法
     void Line3(Point ps, Point pt); // 直线段 Bresenham
     void Circle(Point pc, int r); // 圆 中点画圆法
+    void PolyFill1(); // 区域填充 递归算法
+    void PolyFill1Sub(int x, int y, Point & buffer); // 子函数
 
 protected slots:
     void SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设置图形
@@ -53,6 +55,8 @@ private slots:
     void on_pbLine3_clicked();
 
     void on_pbCircle_clicked();
+
+    void on_pbPoly3_clicked();
 
 private:
     Ui::MainWindow *ui;
