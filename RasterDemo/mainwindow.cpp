@@ -403,6 +403,34 @@ void MainWindow::Circle(Point pc, int r) // 圆 中点画圆法
     AutoUpdate(buffer, Point(-1, -1));
 }
 
+void MainWindow::Poly2() // 多边形 边界标志算法
+{
+    // 对每条边单独进行扫描转换
+    Line1(shape.p1, shape.p2);
+    Line1(shape.p2, shape.p3);
+    Line1(shape.p3, shape.p4);
+    Line1(shape.p1, shape.p4);
+    // 逐行扫描
+    Point buffer(-1, -1);
+    for (int y = 0; y <= Y_LIMIT; y++)
+    {
+        bool inside = false; // 指示是否位于内部
+        int rmEdge = -2; // 最近一次遇到的边界标志的位置
+        for (int x = 0; x <= X_LIMIT; x++)
+        {
+            if (board[x][y] != 0) // 若遇到边界标志
+            {
+                if (x > rmEdge + 1)
+                    inside = !inside; // 内部标志反转
+                rmEdge = x;
+            }
+            if (inside)
+                AutoUpdate(buffer, Point(x, y));
+        }
+    }
+    AutoUpdate(buffer, Point(-1, -1));
+}
+
 void MainWindow::PolyFill1() // 区域填充 递归算法
 {
     Point buffer(-1, -1);
@@ -539,4 +567,10 @@ void MainWindow::on_pbPoly4_clicked()
     Line1(shape.p3, shape.p4);
     Line1(shape.p1, shape.p4);
     PolyFill2();
+}
+
+void MainWindow::on_pbPoly2_clicked()
+{
+    //ClearBoardOnly();
+    //Poly2();
 }
