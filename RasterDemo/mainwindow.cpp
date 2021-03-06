@@ -112,6 +112,9 @@ void MainWindow::paintEvent(QPaintEvent *)
                        shape.TransformY(shape.p1.y),
                        shape.TransformX(shape.p4.x),
                        shape.TransformY(shape.p4.y));
+            p.drawEllipse(QPoint(shape.TransformX(shape.ps.x), // 填充种子
+                                 shape.TransformY(shape.ps.y)),
+                          2, 2);
         }
     }
 }
@@ -401,7 +404,7 @@ void MainWindow::Circle(Point pc, int r) // 圆 中点画圆法
 }
 
 void MainWindow::SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设置图形
-                  int p3x, int p3y, int p4x, int p4y)
+                  int p3x, int p3y, int p4x, int p4y, int p5x, int p5y)
 {
     Clear();
     if (type == 0)
@@ -411,6 +414,11 @@ void MainWindow::SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设�
     else if (type == 2)
         shape.SetPolygon(Point(p1x, p1y), Point(p2x, p2y),
                           Point(p3x, p3y), Point(p4x, p4y));
+    else if (type == 3)
+    {
+        shape.SetSeed(Point(p5x, p5y));
+        SetShape(2, p1x, p1y, p2x, p2y, p3x, p3y, p4x, p4y, p5x, p5y);
+    }
     update();
     SetButtonAccess();
 }

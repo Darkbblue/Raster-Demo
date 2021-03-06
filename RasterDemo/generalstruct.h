@@ -20,6 +20,7 @@ struct Shape // 图形，包含线段、圆形、多边形
     int type; // 0-线段，1-圆形，3-多边形
     Point p1, p2; // 线段所用的两个端点
     Point p3, p4; // 多边形使用的额外顶点
+    Point ps; // 填充算法的种子
     void Clear() { active = false; } // 清空图形
     void SetLine(Point start, Point end) // 设置为线段
     {
@@ -43,6 +44,10 @@ struct Shape // 图形，包含线段、圆形、多边形
         p2 = b;
         p3 = c;
         p4 = d;
+    }
+    void SetSeed(Point a) // 设置填充种子
+    {
+        ps = a;
     }
     int TransformX(int x) { return x * LATTICE + LEFT_MARGIN; } // 将宽像素意义下的X坐标转换为实际坐标
     int TransformY(int y) { return y * LATTICE + UPPER_MARGIN; } // 将宽像素意义下的Y坐标转换为实际坐标
