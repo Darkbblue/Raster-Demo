@@ -23,7 +23,9 @@ void ShapeSetWin::SendShape(int type) // 信号的中转函数，用来减少重
             ui->leP3X->text().toInt(),
             ui->leP3Y->text().toInt(),
             ui->leP4X->text().toInt(),
-            ui->leP4Y->text().toInt());
+            ui->leP4Y->text().toInt(),
+            ui->leP5X->text().toInt(),
+            ui->leP5Y->text().toInt());
 }
 
 void ShapeSetWin::on_pbLine_clicked()
@@ -39,4 +41,9 @@ void ShapeSetWin::on_pbCircle_clicked()
 void ShapeSetWin::on_pbPoly_clicked()
 {
     SendShape(2);
+}
+
+void ShapeSetWin::on_pbSeed_clicked()
+{
+    SendShape(3);
 }

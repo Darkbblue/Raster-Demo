@@ -112,6 +112,9 @@ void MainWindow::paintEvent(QPaintEvent *)
                        shape.TransformY(shape.p1.y),
                        shape.TransformX(shape.p4.x),
                        shape.TransformY(shape.p4.y));
+            p.drawEllipse(QPoint(shape.TransformX(shape.ps.x), // 填充种子
+                                 shape.TransformY(shape.ps.y)),
+                          2, 2);
         }
     }
 }
@@ -400,8 +403,105 @@ void MainWindow::Circle(Point pc, int r) // 圆 中点画圆法
     AutoUpdate(buffer, Point(-1, -1));
 }
 
+void MainWindow::Poly2() // 多边形 边界标志算法
+{
+    // 对每条边单独进行扫描转换
+    Line1(shape.p1, shape.p2);
+    Line1(shape.p2, shape.p3);
+    Line1(shape.p3, shape.p4);
+    Line1(shape.p1, shape.p4);
+    // 逐行扫描
+    Point buffer(-1, -1);
+    for (int y = 0; y <= Y_LIMIT; y++)
+    {
+        bool inside = false; // 指示是否位于内部
+        int rmEdge = -2; // 最近一次遇到的边界标志的位置
+        for (int x = 0; x <= X_LIMIT; x++)
+        {
+            if (board[x][y] != 0) // 若遇到边界标志
+            {
+                if (x > rmEdge + 1)
+                    inside = !inside; // 内部标志反转
+                rmEdge = x;
+            }
+            if (inside)
+                AutoUpdate(buffer, Point(x, y));
+        }
+    }
+    AutoUpdate(buffer, Point(-1, -1));
+}
+
+void MainWindow::PolyFill1() // 区域填充 递归算法
+{
+    Point buffer(-1, -1);
+    PolyFill1Sub(shape.ps.x, shape.ps.y, buffer);
+    AutoUpdate(buffer, Point(-1, -1));
+}
+
+void MainWindow::PolyFill1Sub(int x, int y, Point & buffer) // 子函数
+{
+    if (board[x][y] == 0) // 若尚未填色
+    {
+        AutoUpdate(buffer, Point(x, y));
+        PolyFill1Sub(x, y + 1, buffer);
+        PolyFill1Sub(x, y - 1, buffer);
+        PolyFill1Sub(x - 1, y, buffer);
+        PolyFill1Sub(x + 1, y, buffer);
+    }
+}
+
+void MainWindow::PolyFill2() // 区域填充 扫描线算法
+{
+    std::vector<Point> stack; // 记录待完成扫描线的栈
+    stack.push_back(shape.ps); // 种子入栈
+    Point buffer(-1, -1);
+    while (!stack.empty()) // 在栈空前循环
+    {
+        Point ps = stack.back(); // 取出栈顶
+        stack.pop_back();
+        int x = ps.x;
+        int y = ps.y;
+        int xr; // 当前扫描线上到达的最右侧位置
+        int xl; // 当前扫描线上到达的最左侧位置
+        // 填充当前扫描线
+        while (board[x][y] == 0) // 向右填充
+        {
+            AutoUpdate(buffer, Point(x, y));
+            x++;
+        }
+        xr = x - 1;
+        x = ps.x - 1;
+        while (board[x][y] == 0) // 向左填充
+        {
+            AutoUpdate(buffer, Point(x, y));
+            x--;
+        }
+        xl = x + 1;
+        // 向相邻扫描线扩展
+        y++; // 移动到上方相邻行
+        for (int i = 0; i < 2; i++, y -= 2) // 先处理上方，再处理下方
+        {
+            x = xl; // 回到最左侧
+            while (x <= xr) // 在到达最右侧之前
+            {
+                bool toSpan = false; // 是否需要扩展
+                while (board[x][y] == 0) // 扫描出需要填充的区间
+                {
+                    toSpan = true;
+                    x++;
+                }
+                if (toSpan) // 如果真的进入过上面的循环
+                    stack.push_back(Point(x - 1, y)); // 得到一个新的扫描线种子，入栈
+                while (board[x][y] != 0 && x <= xr) // 快速跳过不需要填充的区间
+                    x++;
+            }
+        }
+    }
+    AutoUpdate(buffer, Point(-1, -1));
+}
+
 void MainWindow::SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设置图形
-                  int p3x, int p3y, int p4x, int p4y)
+                  int p3x, int p3y, int p4x, int p4y, int p5x, int p5y)
 {
     Clear();
     if (type == 0)
@@ -411,6 +511,11 @@ void MainWindow::SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设�
     else if (type == 2)
         shape.SetPolygon(Point(p1x, p1y), Point(p2x, p2y),
                           Point(p3x, p3y), Point(p4x, p4y));
+    else if (type == 3)
+    {
+        shape.SetSeed(Point(p5x, p5y));
+        SetShape(2, p1x, p1y, p2x, p2y, p3x, p3y, p4x, p4y, p5x, p5y);
+    }
     update();
     SetButtonAccess();
 }
@@ -442,4 +547,30 @@ void MainWindow::on_pbCircle_clicked()
 {
     ClearBoardOnly();
     Circle(shape.p1, shape.p2.x);
+}
+
+void MainWindow::on_pbPoly3_clicked()
+{
+    ClearBoardOnly();
+    Line1(shape.p1, shape.p2);
+    Line1(shape.p2, shape.p3);
+    Line1(shape.p3, shape.p4);
+    Line1(shape.p1, shape.p4);
+    PolyFill1();
+}
+
+void MainWindow::on_pbPoly4_clicked()
+{
+    ClearBoardOnly();
+    Line1(shape.p1, shape.p2);
+    Line1(shape.p2, shape.p3);
+    Line1(shape.p3, shape.p4);
+    Line1(shape.p1, shape.p4);
+    PolyFill2();
+}
+
+void MainWindow::on_pbPoly2_clicked()
+{
+    //ClearBoardOnly();
+    //Poly2();
 }

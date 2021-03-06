@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QPainter>
 #include <QTimer>
+#include <vector>
 
 #include <QDebug>
 
@@ -38,10 +39,14 @@ protected:
     void Line2(Point ps, Point pt); // 直线段 中点画线法
     void Line3(Point ps, Point pt); // 直线段 Bresenham
     void Circle(Point pc, int r); // 圆 中点画圆法
+    void Poly2(); // 多边形 边界标志算法
+    void PolyFill1(); // 区域填充 递归算法
+    void PolyFill1Sub(int x, int y, Point & buffer); // 子函数
+    void PolyFill2(); // 区域填充 扫描线算法
 
 protected slots:
     void SetShape(int type, int p1x, int p1y, int p2x, int p2y, // 设置图形
-                  int p3x, int p3y, int p4x, int p4y);
+                  int p3x, int p3y, int p4x, int p4y, int p5x, int p5y);
 
 private slots:
     void on_pbSetShape_clicked();
@@ -53,6 +58,12 @@ private slots:
     void on_pbLine3_clicked();
 
     void on_pbCircle_clicked();
+
+    void on_pbPoly3_clicked();
+
+    void on_pbPoly4_clicked();
+
+    void on_pbPoly2_clicked();
 
 private:
     Ui::MainWindow *ui;
